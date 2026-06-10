@@ -53,32 +53,37 @@
         const CONFIG = {
             serpApiKey: "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180",
             searchQueries: [
+                // Broad cybersecurity roles - remote & global
+                "cybersecurity engineer remote",
+                "cyber security remote",
+                "security engineer remote",
+                "cloud security engineer remote",
+                "detection engineer remote",
+                "incident response remote",
+                "security architect remote",
+                "security operations remote",
+                "threat intelligence remote",
+                "SIEM engineer remote",
+                "SOAR engineer remote",
+                "DevSecOps remote",
+                "application security remote",
+                "penetration tester remote",
+                "vulnerability management remote",
                 "CISO remote",
+                "Head of Security remote",
+                "Director cybersecurity remote",
+                "VP security remote",
+                // Ireland & hybrid
+                "cybersecurity Ireland",
+                "security engineer Ireland hybrid",
+                "cloud security Ireland",
                 "CISO Ireland",
-                "Head of Cybersecurity remote",
-                "Head of Cybersecurity Ireland",
-                "Head of Information Security remote",
-                "Head of Information Security Ireland",
-                "Director of Cloud Security remote",
-                "Director of Cloud Security Ireland hybrid",
-                "Director of Security Operations remote",
-                "Director of Security Operations Ireland",
-                "VP Security Engineering remote",
-                "VP Security Engineering Ireland",
-                "Staff Cloud Security Engineer remote",
-                "Staff Cloud Security Engineer Ireland hybrid",
-                "Principal Security Engineer remote",
-                "Principal Security Engineer Ireland",
-                "Director Cybersecurity remote",
-                "Director Cybersecurity Ireland hybrid",
-                "Chief Information Security Officer remote",
-                "Chief Information Security Officer Ireland",
-                "Director Detection and Response remote",
-                "Director Detection and Response Ireland",
-                "Staff Security Engineer AWS remote",
-                "Staff Security Engineer Ireland",
-                "Head of Cloud Security remote",
-                "Head of Cloud Security Ireland",
+                "Head of Security Ireland",
+                "Director security Ireland",
+                "cyber detection engineer Ireland",
+                "incident response Ireland",
+                "security architect Ireland hybrid",
+                "DevSecOps Ireland",
             ],
             matchKeywords: [
                 "cloud security", "aws", "azure", "ciso", "head of security",
@@ -90,10 +95,6 @@
                 "team lead", "staff engineer", "principal engineer",
                 "director", "vp security", "cloud native", "kubernetes",
                 "container security", "zero trust", "xdr",
-            ],
-            seniorityKeywords: [
-                "ciso", "chief", "head of", "director", "vp", "vice president",
-                "staff", "principal", "senior director", "lead", "manager",
             ],
             minSalary: 125000,
         };
@@ -108,20 +109,29 @@
             const combined = `${title} ${description}`;
             const matchedKeywords = [];
 
-            for (const kw of CONFIG.seniorityKeywords) {
-                if (title.includes(kw)) { score += 30; break; }
+            // Salary is PRIMARY factor (up to 40 points)
+            const salary = extractSalary(job);
+            if (salary) {
+                if (salary >= 200000) score += 40;
+                else if (salary >= 150000) score += 35;
+                else if (salary >= CONFIG.minSalary) score += 25;
+                else return { score: 0, matchedKeywords: [], salary }; // Below minimum - reject
+            } else {
+                // No salary info - moderate base
+                score += 10;
             }
 
+            // Skills match (up to 40 points)
             for (const kw of CONFIG.matchKeywords) {
                 if (combined.includes(kw)) { matchedKeywords.push(kw); }
             }
-            score += Math.min(50, matchedKeywords.length * 5);
+            score += Math.min(40, matchedKeywords.length * 4);
 
+            // Remote or hybrid (10 points)
             if (combined.includes("remote") || combined.includes("hybrid")) score += 10;
-            if (combined.includes("ireland") || combined.includes("dublin")) score += 5;
 
-            const salary = extractSalary(job);
-            if (salary && salary >= CONFIG.minSalary) score += 10;
+            // Ireland bonus (10 points)
+            if (combined.includes("ireland") || combined.includes("dublin")) score += 10;
 
             return { score: Math.min(100, score), matchedKeywords, salary };
         }
@@ -479,18 +489,37 @@
                     setProgress({ current: i + 1, total: queries.length, query });
 
                     try {
-                        const url = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&api_key=${CONFIG.serpApiKey}&hl=en&chips=date_posted:week`;
-                        const response = await fetch(url);
+                        // Use script injection (JSONP-like) to bypass CORS on file:// and browsers
+                        const data = await new Promise((resolve, reject) => {
+                            const callbackName = `serpapi_cb_${Date.now()}_${i}`;
+                            const script = document.createElement("script");
+                            
+                            window[callbackName] = (result) => {
+                                delete window[callbackName];
+                                document.head.removeChild(script);
+                                resolve(result);
+                            };
+                            
+                            script.onerror = () => {
+                                delete window[callbackName];
+                                document.head.removeChild(script);
+                                reject(new Error("Script load failed"));
+                            };
 
-                        if (!response.ok) {
-                            if (response.status === 401) {
-                                setError("API key invalid. Please update your SerpAPI key.");
-                                break;
-                            }
-                            continue;
-                        }
+                            // SerpAPI supports callback parameter for JSONP
+                            script.src = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&api_key=${CONFIG.serpApiKey}&hl=en&chips=date_posted:week&no_cache=false&output=json&callback=${callbackName}`;
+                            document.head.appendChild(script);
 
-                        const data = await response.json();
+                            // Timeout after 15s
+                            setTimeout(() => {
+                                if (window[callbackName]) {
+                                    delete window[callbackName];
+                                    try { document.head.removeChild(script); } catch(e) {}
+                                    reject(new Error("Timeout"));
+                                }
+                            }, 15000);
+                        });
+
                         const results = data.jobs_results || [];
 
                         for (const job of results) {
