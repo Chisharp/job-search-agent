@@ -27,23 +27,40 @@ SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "YOUR_SERPAPI_KEY_HERE")
 
 # Target roles to search for
 SEARCH_QUERIES = [
+    # Broad cybersecurity roles - remote & global
+    "cybersecurity engineer remote",
+    "cyber security remote",
+    "security engineer remote",
+    "cloud security engineer remote",
+    "detection engineer remote",
+    "incident response remote",
+    "security architect remote",
+    "security operations remote",
+    "threat intelligence remote",
+    "SIEM engineer remote",
+    "SOAR engineer remote",
+    "DevSecOps remote",
+    "application security remote",
+    "penetration tester remote",
+    "vulnerability management remote",
     "CISO remote",
-    "Head of Cybersecurity remote",
-    "Head of Information Security remote",
-    "Director of Cloud Security remote",
-    "Director of Security Operations remote",
-    "VP Security Engineering remote",
-    "Staff Cloud Security Engineer remote",
-    "Principal Security Engineer remote",
-    "Director Cybersecurity remote",
-    "Head of Security Engineering remote",
-    "Chief Information Security Officer remote",
-    "Director Detection and Response remote",
-    "Staff Security Engineer AWS remote",
-    "Head of Cloud Security remote",
+    "Head of Security remote",
+    "Director cybersecurity remote",
+    "VP security remote",
+    # Ireland & hybrid specific
+    "cybersecurity Ireland",
+    "security engineer Ireland hybrid",
+    "cloud security Ireland",
+    "CISO Ireland",
+    "Head of Security Ireland",
+    "Director security Ireland",
+    "cyber detection engineer Ireland",
+    "incident response Ireland",
+    "security architect Ireland hybrid",
+    "DevSecOps Ireland",
 ]
 
-# Minimum salary threshold (USD equivalent)
+# Minimum salary threshold (USD/EUR equivalent)
 MIN_SALARY = 125000
 
 # Keywords that indicate a good match based on resume
@@ -114,33 +131,43 @@ def search_jobs(query):
 
 
 def calculate_match_score(job):
-    """Calculate how well a job matches Chioma's profile (0-100)."""
+    """Calculate how well a job matches Chioma's profile (0-100).
+    Primary factor: salary. Secondary: skills match."""
     score = 0
     title = job.get("title", "").lower()
     description = job.get("description", "").lower()
     combined = f"{title} {description}"
 
-    # Seniority match (up to 30 points)
-    for keyword in SENIORITY_KEYWORDS:
-        if keyword in title:
-            score += 30
-            break
+    # Salary is the PRIMARY scoring factor (up to 40 points)
+    salary_info = extract_salary(job)
+    if salary_info:
+        if salary_info >= 200000:
+            score += 40
+        elif salary_info >= 150000:
+            score += 35
+        elif salary_info >= MIN_SALARY:
+            score += 25
+        else:
+            # Below minimum salary - heavy penalty
+            return 0, []
+    else:
+        # No salary info - give moderate base (might still be good)
+        score += 10
 
-    # Skills/keyword match (up to 50 points)
+    # Skills/keyword match (up to 40 points)
     matched_keywords = []
     for keyword in MATCH_KEYWORDS:
         if keyword in combined:
             matched_keywords.append(keyword)
-    keyword_score = min(50, len(matched_keywords) * 5)
+    keyword_score = min(40, len(matched_keywords) * 4)
     score += keyword_score
 
-    # Remote preference (up to 10 points)
-    if "remote" in combined:
+    # Remote or hybrid preference (up to 10 points)
+    if "remote" in combined or "hybrid" in combined:
         score += 10
 
-    # Salary indicator (up to 10 points)
-    salary_info = extract_salary(job)
-    if salary_info and salary_info >= MIN_SALARY:
+    # Ireland location bonus (10 points)
+    if "ireland" in combined or "dublin" in combined:
         score += 10
 
     return min(100, score), matched_keywords

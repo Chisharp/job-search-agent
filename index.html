@@ -54,18 +54,31 @@
             serpApiKey: "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180",
             searchQueries: [
                 "CISO remote",
+                "CISO Ireland",
                 "Head of Cybersecurity remote",
+                "Head of Cybersecurity Ireland",
                 "Head of Information Security remote",
+                "Head of Information Security Ireland",
                 "Director of Cloud Security remote",
+                "Director of Cloud Security Ireland hybrid",
                 "Director of Security Operations remote",
+                "Director of Security Operations Ireland",
                 "VP Security Engineering remote",
+                "VP Security Engineering Ireland",
                 "Staff Cloud Security Engineer remote",
+                "Staff Cloud Security Engineer Ireland hybrid",
                 "Principal Security Engineer remote",
+                "Principal Security Engineer Ireland",
                 "Director Cybersecurity remote",
+                "Director Cybersecurity Ireland hybrid",
                 "Chief Information Security Officer remote",
+                "Chief Information Security Officer Ireland",
                 "Director Detection and Response remote",
+                "Director Detection and Response Ireland",
                 "Staff Security Engineer AWS remote",
+                "Staff Security Engineer Ireland",
                 "Head of Cloud Security remote",
+                "Head of Cloud Security Ireland",
             ],
             matchKeywords: [
                 "cloud security", "aws", "azure", "ciso", "head of security",
@@ -104,7 +117,8 @@
             }
             score += Math.min(50, matchedKeywords.length * 5);
 
-            if (combined.includes("remote")) score += 10;
+            if (combined.includes("remote") || combined.includes("hybrid")) score += 10;
+            if (combined.includes("ireland") || combined.includes("dublin")) score += 5;
 
             const salary = extractSalary(job);
             if (salary && salary >= CONFIG.minSalary) score += 10;
@@ -155,7 +169,7 @@
                                 🔍 Job Search Agent
                             </h1>
                             <p style={{ color: "#94a3b8", fontSize: 14 }}>
-                                Chioma Okoye • CISO / Director / Staff+ • Remote • $125k+
+                                Chioma Okoye • CISO / Director / Staff+ • Remote & Hybrid • Ireland & Global • $125k+
                             </p>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>

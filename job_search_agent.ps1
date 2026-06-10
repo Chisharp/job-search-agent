@@ -20,20 +20,37 @@
 $SERPAPI_KEY = if ($env:SERPAPI_KEY) { $env:SERPAPI_KEY } else { "YOUR_SERPAPI_KEY_HERE" }
 
 $SEARCH_QUERIES = @(
+    # Broad cybersecurity roles - remote & global
+    "cybersecurity engineer remote"
+    "cyber security remote"
+    "security engineer remote"
+    "cloud security engineer remote"
+    "detection engineer remote"
+    "incident response remote"
+    "security architect remote"
+    "security operations remote"
+    "threat intelligence remote"
+    "SIEM engineer remote"
+    "SOAR engineer remote"
+    "DevSecOps remote"
+    "application security remote"
+    "penetration tester remote"
+    "vulnerability management remote"
     "CISO remote"
-    "Head of Cybersecurity remote"
-    "Head of Information Security remote"
-    "Director of Cloud Security remote"
-    "Director of Security Operations remote"
-    "VP Security Engineering remote"
-    "Staff Cloud Security Engineer remote"
-    "Principal Security Engineer remote"
-    "Director Cybersecurity remote"
-    "Head of Security Engineering remote"
-    "Chief Information Security Officer remote"
-    "Director Detection and Response remote"
-    "Staff Security Engineer AWS remote"
-    "Head of Cloud Security remote"
+    "Head of Security remote"
+    "Director cybersecurity remote"
+    "VP security remote"
+    # Ireland & hybrid specific
+    "cybersecurity Ireland"
+    "security engineer Ireland hybrid"
+    "cloud security Ireland"
+    "CISO Ireland"
+    "Head of Security Ireland"
+    "Director security Ireland"
+    "cyber detection engineer Ireland"
+    "incident response Ireland"
+    "security architect Ireland hybrid"
+    "DevSecOps Ireland"
 )
 
 $MIN_SALARY = 125000
@@ -119,31 +136,37 @@ function Get-MatchScore($job) {
     $combined = "$title $description"
     $matchedKeywords = @()
 
-    # Seniority match (up to 30 points)
-    foreach ($kw in $SENIORITY_KEYWORDS) {
-        if ($title -match [regex]::Escape($kw)) {
-            $score += 30
-            break
+    # Salary is PRIMARY factor (up to 40 points)
+    $salary = Get-SalaryEstimate $job
+    if ($salary) {
+        if ($salary -ge 200000) { $score += 40 }
+        elseif ($salary -ge 150000) { $score += 35 }
+        elseif ($salary -ge $MIN_SALARY) { $score += 25 }
+        else {
+            # Below minimum - reject
+            return @{ Score = 0; Keywords = @() }
         }
+    } else {
+        # No salary info - moderate base
+        $score += 10
     }
 
-    # Skills match (up to 50 points)
+    # Skills match (up to 40 points)
     foreach ($kw in $MATCH_KEYWORDS) {
         if ($combined -match [regex]::Escape($kw)) {
             $matchedKeywords += $kw
         }
     }
-    $keywordScore = [Math]::Min(50, $matchedKeywords.Count * 5)
+    $keywordScore = [Math]::Min(40, $matchedKeywords.Count * 4)
     $score += $keywordScore
 
-    # Remote (10 points)
-    if ($combined -match "remote") {
+    # Remote or hybrid (10 points)
+    if ($combined -match "remote" -or $combined -match "hybrid") {
         $score += 10
     }
 
-    # Salary (10 points)
-    $salary = Get-SalaryEstimate $job
-    if ($salary -and $salary -ge $MIN_SALARY) {
+    # Ireland bonus (10 points)
+    if ($combined -match "ireland" -or $combined -match "dublin") {
         $score += 10
     }
 
