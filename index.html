@@ -10,80 +10,32 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0f172a;
             color: #e2e8f0;
             min-height: 100vh;
         }
-        .loading-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            gap: 20px;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #334155;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { width: 20px; height: 20px; border: 3px solid #334155; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+        code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
     </style>
 </head>
 <body>
-    <div id="root">
-        <div class="loading-screen">
-            <div class="spinner"></div>
-            <p>Loading Job Search Agent...</p>
-        </div>
-    </div>
-
+    <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
+        const { useState, useCallback } = React;
 
-        // ============================================================
-        // CONFIGURATION
-        // ============================================================
         const CONFIG = {
             serpApiKey: "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180",
             searchQueries: [
-                // Broad cybersecurity roles - remote & global
-                "cybersecurity engineer remote",
-                "cyber security remote",
-                "security engineer remote",
-                "cloud security engineer remote",
-                "detection engineer remote",
-                "incident response remote",
-                "security architect remote",
-                "security operations remote",
-                "threat intelligence remote",
-                "SIEM engineer remote",
-                "SOAR engineer remote",
-                "DevSecOps remote",
-                "application security remote",
-                "penetration tester remote",
-                "vulnerability management remote",
-                "CISO remote",
-                "Head of Security remote",
-                "Director cybersecurity remote",
-                "VP security remote",
-                // Ireland & hybrid
-                "cybersecurity Ireland",
-                "security engineer Ireland hybrid",
-                "cloud security Ireland",
-                "CISO Ireland",
-                "Head of Security Ireland",
-                "Director security Ireland",
-                "cyber detection engineer Ireland",
-                "incident response Ireland",
-                "security architect Ireland hybrid",
-                "DevSecOps Ireland",
+                "cybersecurity engineer remote", "cyber security remote", "security engineer remote",
+                "cloud security engineer remote", "detection engineer remote", "incident response remote",
+                "security architect remote", "security operations remote", "threat intelligence remote",
+                "SIEM engineer remote", "SOAR engineer remote", "DevSecOps remote",
+                "application security remote", "CISO remote", "Head of Security remote",
+                "Director cybersecurity remote", "cybersecurity Ireland", "cloud security Ireland",
+                "CISO Ireland", "security architect Ireland hybrid",
             ],
             matchKeywords: [
                 "cloud security", "aws", "azure", "ciso", "head of security",
@@ -99,43 +51,6 @@
             minSalary: 125000,
         };
 
-        // ============================================================
-        // HELPER FUNCTIONS
-        // ============================================================
-        function calculateMatchScore(job) {
-            let score = 0;
-            const title = (job.title || "").toLowerCase();
-            const description = (job.description || "").toLowerCase();
-            const combined = `${title} ${description}`;
-            const matchedKeywords = [];
-
-            // Salary is PRIMARY factor (up to 40 points)
-            const salary = extractSalary(job);
-            if (salary) {
-                if (salary >= 200000) score += 40;
-                else if (salary >= 150000) score += 35;
-                else if (salary >= CONFIG.minSalary) score += 25;
-                else return { score: 0, matchedKeywords: [], salary }; // Below minimum - reject
-            } else {
-                // No salary info - moderate base
-                score += 10;
-            }
-
-            // Skills match (up to 40 points)
-            for (const kw of CONFIG.matchKeywords) {
-                if (combined.includes(kw)) { matchedKeywords.push(kw); }
-            }
-            score += Math.min(40, matchedKeywords.length * 4);
-
-            // Remote or hybrid (10 points)
-            if (combined.includes("remote") || combined.includes("hybrid")) score += 10;
-
-            // Ireland bonus (10 points)
-            if (combined.includes("ireland") || combined.includes("dublin")) score += 10;
-
-            return { score: Math.min(100, score), matchedKeywords, salary };
-        }
-
         function extractSalary(job) {
             const ext = job.detected_extensions || {};
             if (ext.salary_max) return ext.salary_max;
@@ -147,355 +62,86 @@
             return null;
         }
 
-        function getScoreColor(score) {
-            if (score >= 70) return "#10b981";
-            if (score >= 50) return "#f59e0b";
-            return "#3b82f6";
-        }
+        function calculateMatchScore(job) {
+            let score = 0;
+            const title = (job.title || "").toLowerCase();
+            const description = (job.description || "").toLowerCase();
+            const combined = `${title} ${description}`;
+            const matchedKeywords = [];
 
-        function getScoreLabel(score) {
-            if (score >= 70) return "Strong Match";
-            if (score >= 50) return "Good Match";
-            return "Moderate";
-        }
+            const salary = extractSalary(job);
+            if (salary) {
+                if (salary >= 200000) score += 40;
+                else if (salary >= 150000) score += 35;
+                else if (salary >= CONFIG.minSalary) score += 25;
+                else return { score: 0, matchedKeywords: [], salary };
+            } else {
+                score += 10;
+            }
 
-        // ============================================================
-        // COMPONENTS
-        // ============================================================
+            for (const kw of CONFIG.matchKeywords) {
+                if (combined.includes(kw)) matchedKeywords.push(kw);
+            }
+            score += Math.min(40, matchedKeywords.length * 4);
 
-        function Header({ jobCount, isSearching, onSearch }) {
-            return (
-                <header style={{
-                    background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-                    borderBottom: "1px solid #334155",
-                    padding: "24px 32px",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 100,
-                }}>
-                    <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-                        <div>
-                            <h1 style={{ fontSize: 24, fontWeight: 700, color: "#f8fafc", marginBottom: 4 }}>
-                                🔍 Job Search Agent
-                            </h1>
-                            <p style={{ color: "#94a3b8", fontSize: 14 }}>
-                                Chioma Okoye • CISO / Director / Staff+ • Remote & Hybrid • Ireland & Global • $125k+
-                            </p>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                            {jobCount > 0 && (
-                                <span style={{ background: "#1e3a5f", color: "#60a5fa", padding: "6px 12px", borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
-                                    {jobCount} jobs found
-                                </span>
-                            )}
-                            <button
-                                onClick={onSearch}
-                                disabled={isSearching}
-                                style={{
-                                    background: isSearching ? "#334155" : "#3b82f6",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "10px 20px",
-                                    borderRadius: 8,
-                                    fontSize: 14,
-                                    fontWeight: 600,
-                                    cursor: isSearching ? "not-allowed" : "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 8,
-                                }}
-                            >
-                                {isSearching ? (
-                                    <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }}></span> Searching...</>
-                                ) : "🚀 Run Search"}
-                            </button>
-                        </div>
-                    </div>
-                </header>
-            );
-        }
+            if (combined.includes("remote") || combined.includes("hybrid")) score += 10;
+            if (combined.includes("ireland") || combined.includes("dublin")) score += 10;
 
-        function StatsBar({ jobs }) {
-            const strong = jobs.filter(j => j.score >= 70).length;
-            const good = jobs.filter(j => j.score >= 50 && j.score < 70).length;
-            const withSalary = jobs.filter(j => j.salary).length;
-            const avgSalary = withSalary > 0
-                ? Math.round(jobs.filter(j => j.salary).reduce((a, j) => a + j.salary, 0) / withSalary)
-                : 0;
-
-            return (
-                <div style={{ maxWidth: 1200, margin: "24px auto", padding: "0 32px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-                    {[
-                        { label: "Total Jobs", value: jobs.length, icon: "📋", color: "#3b82f6" },
-                        { label: "Strong Matches", value: strong, icon: "🟢", color: "#10b981" },
-                        { label: "Good Matches", value: good, icon: "🟡", color: "#f59e0b" },
-                        { label: "Avg Salary", value: avgSalary ? `$${avgSalary.toLocaleString()}` : "N/A", icon: "💰", color: "#8b5cf6" },
-                    ].map((stat, i) => (
-                        <div key={i} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 12, padding: 20 }}>
-                            <div style={{ fontSize: 24, marginBottom: 8 }}>{stat.icon}</div>
-                            <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                            <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>{stat.label}</div>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-
-        function FilterBar({ filter, setFilter, sortBy, setSortBy }) {
-            return (
-                <div style={{ maxWidth: 1200, margin: "0 auto 16px", padding: "0 32px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                    <input
-                        type="text"
-                        placeholder="Filter by title, company, or keyword..."
-                        value={filter}
-                        onChange={e => setFilter(e.target.value)}
-                        style={{
-                            flex: 1,
-                            minWidth: 250,
-                            background: "#1e293b",
-                            border: "1px solid #334155",
-                            borderRadius: 8,
-                            padding: "10px 16px",
-                            color: "#e2e8f0",
-                            fontSize: 14,
-                            outline: "none",
-                        }}
-                    />
-                    <select
-                        value={sortBy}
-                        onChange={e => setSortBy(e.target.value)}
-                        style={{
-                            background: "#1e293b",
-                            border: "1px solid #334155",
-                            borderRadius: 8,
-                            padding: "10px 16px",
-                            color: "#e2e8f0",
-                            fontSize: 14,
-                            outline: "none",
-                        }}
-                    >
-                        <option value="score">Sort by Match Score</option>
-                        <option value="salary">Sort by Salary</option>
-                        <option value="date">Sort by Date</option>
-                        <option value="company">Sort by Company</option>
-                    </select>
-                </div>
-            );
+            return { score: Math.min(100, score), matchedKeywords, salary };
         }
 
         function JobCard({ job, index }) {
             const [expanded, setExpanded] = useState(false);
-            const scoreColor = getScoreColor(job.score);
-            const scoreLabel = getScoreLabel(job.score);
+            const color = job.score >= 70 ? "#10b981" : job.score >= 50 ? "#f59e0b" : "#3b82f6";
+            const label = job.score >= 70 ? "Strong" : job.score >= 50 ? "Good" : "Moderate";
 
             return (
-                <div
-                    style={{
-                        background: "#1e293b",
-                        border: `1px solid ${job.score >= 70 ? "#1e3a5f" : "#334155"}`,
-                        borderRadius: 12,
-                        padding: 24,
-                        animation: `fadeIn 0.3s ease ${index * 0.05}s both`,
-                        transition: "border-color 0.2s, transform 0.2s",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = scoreColor}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = job.score >= 70 ? "#1e3a5f" : "#334155"}
-                >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ background: "#1e293b", border: `1px solid ${job.score >= 70 ? "#1e3a5f" : "#334155"}`, borderRadius: 12, padding: 20, animation: `fadeIn 0.3s ease ${Math.min(index * 0.03, 1)}s both` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
                         <div style={{ flex: 1 }}>
-                            <h3 style={{ fontSize: 18, fontWeight: 600, color: "#f8fafc", marginBottom: 8 }}>
-                                {job.title}
-                            </h3>
-                            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 14, color: "#94a3b8" }}>
+                            <h3 style={{ fontSize: 17, fontWeight: 600, color: "#f8fafc", marginBottom: 6 }}>{job.title}</h3>
+                            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13, color: "#94a3b8" }}>
                                 <span>🏢 {job.company_name || "N/A"}</span>
                                 <span>📍 {job.location || "Remote"}</span>
                                 {job.salary && <span style={{ color: "#10b981", fontWeight: 600 }}>💰 ${job.salary.toLocaleString()}+</span>}
                                 {job.posted && <span>🕐 {job.posted}</span>}
                             </div>
                         </div>
-                        <div style={{ textAlign: "center" }}>
-                            <div style={{
-                                width: 56, height: 56,
-                                borderRadius: "50%",
-                                border: `3px solid ${scoreColor}`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 16, fontWeight: 700, color: scoreColor,
-                            }}>
-                                {job.score}
-                            </div>
-                            <div style={{ fontSize: 11, color: scoreColor, marginTop: 4, fontWeight: 600 }}>{scoreLabel}</div>
+                        <div style={{ textAlign: "center", minWidth: 56 }}>
+                            <div style={{ width: 50, height: 50, borderRadius: "50%", border: `3px solid ${color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color }}>{job.score}</div>
+                            <div style={{ fontSize: 10, color, marginTop: 3, fontWeight: 600 }}>{label}</div>
                         </div>
                     </div>
-
-                    {/* Keywords */}
-                    <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {job.matchedKeywords.slice(0, expanded ? 100 : 8).map((kw, i) => (
-                            <span key={i} style={{
-                                background: "#0f172a",
-                                border: "1px solid #334155",
-                                borderRadius: 4,
-                                padding: "3px 8px",
-                                fontSize: 11,
-                                color: "#94a3b8",
-                            }}>{kw}</span>
+                    <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 5 }}>
+                        {(job.matchedKeywords || []).slice(0, expanded ? 50 : 6).map((kw, i) => (
+                            <span key={i} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 4, padding: "2px 7px", fontSize: 11, color: "#94a3b8" }}>{kw}</span>
                         ))}
-                        {!expanded && job.matchedKeywords.length > 8 && (
-                            <span style={{ fontSize: 11, color: "#64748b", padding: "3px 8px" }}>
-                                +{job.matchedKeywords.length - 8} more
-                            </span>
-                        )}
+                        {!expanded && (job.matchedKeywords || []).length > 6 && <span style={{ fontSize: 11, color: "#64748b", padding: "2px 7px" }}>+{job.matchedKeywords.length - 6}</span>}
                     </div>
-
-                    {/* Expanded description */}
-                    {expanded && job.description && (
-                        <p style={{ marginTop: 16, fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
-                            {job.description.substring(0, 500)}...
-                        </p>
-                    )}
-
-                    {/* Actions */}
-                    <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                        {job.applyLinks && job.applyLinks.length > 0 && (
-                            <a
-                                href={job.applyLinks[0].link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                    background: "#3b82f6",
-                                    color: "#fff",
-                                    padding: "8px 16px",
-                                    borderRadius: 6,
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    textDecoration: "none",
-                                }}
-                            >
-                                Apply → {job.applyLinks[0].title || "Link"}
+                    {expanded && job.description && <p style={{ marginTop: 12, fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>{job.description.substring(0, 400)}...</p>}
+                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        {(job.applyLinks || []).slice(0, 2).map((link, i) => (
+                            <a key={i} href={link.link} target="_blank" rel="noopener noreferrer" style={{ background: i === 0 ? "#3b82f6" : "transparent", color: i === 0 ? "#fff" : "#60a5fa", padding: "7px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, textDecoration: "none", border: i === 0 ? "none" : "1px solid #334155" }}>
+                                {i === 0 ? "Apply →" : ""} {link.title || "Apply"}
                             </a>
-                        )}
-                        {job.applyLinks && job.applyLinks.length > 1 && (
-                            job.applyLinks.slice(1, 3).map((link, i) => (
-                                <a
-                                    key={i}
-                                    href={link.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        background: "transparent",
-                                        color: "#60a5fa",
-                                        padding: "8px 16px",
-                                        borderRadius: 6,
-                                        fontSize: 13,
-                                        border: "1px solid #334155",
-                                        textDecoration: "none",
-                                    }}
-                                >
-                                    {link.title || "Apply"}
-                                </a>
-                            ))
-                        )}
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            style={{
-                                background: "transparent",
-                                border: "1px solid #334155",
-                                color: "#94a3b8",
-                                padding: "8px 16px",
-                                borderRadius: 6,
-                                fontSize: 13,
-                                cursor: "pointer",
-                                marginLeft: "auto",
-                            }}
-                        >
-                            {expanded ? "Show Less" : "Show More"}
+                        ))}
+                        <button onClick={() => setExpanded(!expanded)} style={{ background: "transparent", border: "1px solid #334155", color: "#94a3b8", padding: "7px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", marginLeft: "auto" }}>
+                            {expanded ? "Less" : "More"}
                         </button>
                     </div>
                 </div>
             );
         }
 
-        function SearchProgress({ current, total, query }) {
-            return (
-                <div style={{ maxWidth: 1200, margin: "24px auto", padding: "0 32px" }}>
-                    <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 12, padding: 24 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                            <span style={{ fontSize: 14, color: "#94a3b8" }}>Searching: {query}</span>
-                            <span style={{ fontSize: 14, color: "#60a5fa" }}>{current}/{total}</span>
-                        </div>
-                        <div style={{ background: "#0f172a", borderRadius: 8, height: 8, overflow: "hidden" }}>
-                            <div style={{
-                                background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
-                                height: "100%",
-                                width: `${(current / total) * 100}%`,
-                                transition: "width 0.3s ease",
-                                borderRadius: 8,
-                            }}></div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        function EmptyState({ onSearch, onLoadFile }) {
-            return (
-                <div style={{ textAlign: "center", padding: "80px 32px" }}>
-                    <div style={{ fontSize: 64, marginBottom: 24 }}>🎯</div>
-                    <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12, color: "#f8fafc" }}>
-                        Ready to Find Your Next Role
-                    </h2>
-                    <p style={{ color: "#94a3b8", fontSize: 16, marginBottom: 32, maxWidth: 500, margin: "0 auto 32px" }}>
-                        Click "Run Search" to scan job boards for cybersecurity roles matching your profile. Any role with $125k+ salary qualifies.
-                    </p>
-                    <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-                        <button
-                            onClick={onSearch}
-                            style={{
-                                background: "#3b82f6",
-                                color: "#fff",
-                                border: "none",
-                                padding: "14px 32px",
-                                borderRadius: 8,
-                                fontSize: 16,
-                                fontWeight: 600,
-                                cursor: "pointer",
-                            }}
-                        >
-                            🚀 Run Live Search
-                        </button>
-                        <label
-                            style={{
-                                background: "#1e293b",
-                                color: "#e2e8f0",
-                                border: "1px solid #334155",
-                                padding: "14px 32px",
-                                borderRadius: 8,
-                                fontSize: 16,
-                                fontWeight: 600,
-                                cursor: "pointer",
-                            }}
-                        >
-                            📂 Load from job_results.json
-                            <input type="file" accept=".json" style={{ display: "none" }} onChange={onLoadFile} />
-                        </label>
-                    </div>
-                    <p style={{ color: "#64748b", fontSize: 13, marginTop: 20, maxWidth: 500, margin: "20px auto 0" }}>
-                        Tip: Run <code style={{ background: "#334155", padding: "2px 6px", borderRadius: 4 }}>.\job_search_agent.ps1</code> first to generate job_results.json, then load it here.
-                    </p>
-                </div>
-            );
-        }
-
-        // ============================================================
-        // MAIN APP
-        // ============================================================
         function App() {
             const [jobs, setJobs] = useState([]);
             const [isSearching, setIsSearching] = useState(false);
-            const [progress, setProgress] = useState({ current: 0, total: 0, query: "" });
+            const [progress, setProgress] = useState("");
             const [filter, setFilter] = useState("");
             const [sortBy, setSortBy] = useState("score");
             const [error, setError] = useState("");
 
+            // Load from JSON file (primary method)
             const loadFromFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -505,140 +151,173 @@
                         const data = JSON.parse(event.target.result);
                         const processed = data.map(job => ({
                             id: job.job_id || `${job.title}|${job.company_name}`,
-                            title: job.title,
-                            company_name: job.company_name,
-                            location: job.location,
-                            description: job.description,
+                            title: job.title || "",
+                            company_name: job.company_name || "",
+                            location: job.location || "",
+                            description: job.description || "",
                             score: job.match_score || 0,
                             matchedKeywords: job.matched_keywords || [],
                             salary: job.salary_estimate,
-                            posted: job.detected_extensions?.posted_at || "Recently",
+                            posted: (job.detected_extensions && job.detected_extensions.posted_at) || "Recently",
                             applyLinks: job.apply_options || [],
-                            via: job.via,
+                            via: job.via || "",
                         })).filter(j => j.score > 0).sort((a, b) => b.score - a.score);
                         setJobs(processed);
+                        setError("");
                     } catch (err) {
-                        setError("Failed to parse JSON file. Make sure it's a valid job_results.json.");
+                        setError("Failed to parse file. Ensure it's a valid job_results.json");
                     }
                 };
                 reader.readAsText(file);
             };
 
+            // Live search via CORS proxy
             const searchJobs = useCallback(async () => {
                 setIsSearching(true);
                 setError("");
                 const allJobs = [];
                 const seen = new Set();
                 const queries = CONFIG.searchQueries;
-                setProgress({ current: 0, total: queries.length, query: "" });
 
                 for (let i = 0; i < queries.length; i++) {
                     const query = queries[i];
-                    setProgress({ current: i + 1, total: queries.length, query });
+                    setProgress(`[${i + 1}/${queries.length}] ${query}`);
 
                     try {
-                        // Use corsproxy.io to bypass CORS restrictions
                         const targetUrl = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&api_key=${CONFIG.serpApiKey}&hl=en&chips=date_posted:week`;
                         const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
 
                         if (!response.ok) {
-                            if (response.status === 401) {
-                                setError("API key invalid. Please update your SerpAPI key in the HTML file.");
+                            if (response.status === 403 || response.status === 0) {
+                                setError("CORS proxy blocked. Use 'Load from file' instead — run the PowerShell script first to generate job_results.json");
                                 break;
                             }
                             continue;
                         }
 
                         const data = await response.json();
-                        const results = data.jobs_results || [];
-
-                        for (const job of results) {
+                        for (const job of (data.jobs_results || [])) {
                             const id = `${job.title}|${job.company_name}|${job.location}`;
                             if (seen.has(id)) continue;
                             seen.add(id);
-
                             const { score, matchedKeywords, salary } = calculateMatchScore(job);
                             if (score >= 40) {
-                                allJobs.push({
-                                    id,
-                                    title: job.title,
-                                    company_name: job.company_name,
-                                    location: job.location,
-                                    description: job.description,
-                                    score,
-                                    matchedKeywords,
-                                    salary,
-                                    posted: job.detected_extensions?.posted_at || "Recently",
-                                    applyLinks: job.apply_options || [],
-                                    via: job.via,
-                                });
+                                allJobs.push({ id, title: job.title, company_name: job.company_name, location: job.location, description: job.description, score, matchedKeywords, salary, posted: job.detected_extensions?.posted_at || "Recently", applyLinks: job.apply_options || [], via: job.via });
                             }
                         }
                     } catch (err) {
-                        console.error(`Search failed for "${query}":`, err);
+                        console.error(err);
+                        setError("Network error. Use 'Load from file' — run .\\job_search_agent.ps1 first, then load job_results.json here.");
+                        break;
                     }
 
-                    // Rate limiting
-                    if (i < queries.length - 1) {
-                        await new Promise(r => setTimeout(r, 1500));
-                    }
+                    if (i < queries.length - 1) await new Promise(r => setTimeout(r, 1500));
                 }
 
                 allJobs.sort((a, b) => b.score - a.score);
                 setJobs(allJobs);
                 setIsSearching(false);
+                setProgress("");
             }, []);
 
-            // Filter and sort
-            const filteredJobs = jobs.filter(job => {
+            const filtered = jobs.filter(j => {
                 if (!filter) return true;
                 const f = filter.toLowerCase();
-                return (
-                    job.title.toLowerCase().includes(f) ||
-                    (job.company_name || "").toLowerCase().includes(f) ||
-                    job.matchedKeywords.some(kw => kw.includes(f))
-                );
+                return j.title.toLowerCase().includes(f) || j.company_name.toLowerCase().includes(f) || (j.matchedKeywords || []).some(k => k.includes(f));
             }).sort((a, b) => {
-                switch (sortBy) {
-                    case "salary": return (b.salary || 0) - (a.salary || 0);
-                    case "company": return (a.company_name || "").localeCompare(b.company_name || "");
-                    case "date": return 0; // keep original order
-                    default: return b.score - a.score;
-                }
+                if (sortBy === "salary") return (b.salary || 0) - (a.salary || 0);
+                if (sortBy === "company") return a.company_name.localeCompare(b.company_name);
+                return b.score - a.score;
             });
+
+            const strong = jobs.filter(j => j.score >= 70).length;
+            const withSalary = jobs.filter(j => j.salary);
+            const avgSalary = withSalary.length > 0 ? Math.round(withSalary.reduce((a, j) => a + j.salary, 0) / withSalary.length) : 0;
 
             return (
                 <div>
-                    <Header jobCount={jobs.length} isSearching={isSearching} onSearch={searchJobs} />
-
-                    {error && (
-                        <div style={{ maxWidth: 1200, margin: "16px auto", padding: "0 32px" }}>
-                            <div style={{ background: "#3b1111", border: "1px solid #7f1d1d", borderRadius: 8, padding: 16, color: "#fca5a5" }}>
-                                ⚠️ {error}
+                    {/* Header */}
+                    <header style={{ background: "#1e293b", borderBottom: "1px solid #334155", padding: "20px 28px", position: "sticky", top: 0, zIndex: 100 }}>
+                        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                            <div>
+                                <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f8fafc" }}>🔍 Job Search Agent</h1>
+                                <p style={{ color: "#94a3b8", fontSize: 13 }}>Chioma Okoye • Cybersecurity • Remote & Hybrid • Ireland & Global • $125k+</p>
+                            </div>
+                            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                {jobs.length > 0 && <span style={{ background: "#1e3a5f", color: "#60a5fa", padding: "5px 11px", borderRadius: 16, fontSize: 12, fontWeight: 600 }}>{jobs.length} jobs</span>}
+                                <label style={{ background: "#10b981", color: "#fff", padding: "9px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                                    📂 Load Results
+                                    <input type="file" accept=".json" style={{ display: "none" }} onChange={loadFromFile} />
+                                </label>
+                                <button onClick={searchJobs} disabled={isSearching} style={{ background: isSearching ? "#334155" : "#3b82f6", color: "#fff", border: "none", padding: "9px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: isSearching ? "not-allowed" : "pointer" }}>
+                                    {isSearching ? "⏳ Searching..." : "🚀 Live Search"}
+                                </button>
                             </div>
                         </div>
-                    )}
+                    </header>
 
-                    {isSearching && <SearchProgress {...progress} />}
+                    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 28px" }}>
+                        {/* Error */}
+                        {error && <div style={{ background: "#3b1111", border: "1px solid #7f1d1d", borderRadius: 8, padding: 14, color: "#fca5a5", marginBottom: 16, fontSize: 13 }}>⚠️ {error}</div>}
 
-                    {!isSearching && jobs.length === 0 && <EmptyState onSearch={searchJobs} onLoadFile={loadFromFile} />}
+                        {/* Progress */}
+                        {isSearching && <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 8, padding: 14, marginBottom: 16, fontSize: 13, color: "#94a3b8" }}><span className="spinner" style={{ marginRight: 10 }}></span>{progress}</div>}
 
-                    {jobs.length > 0 && (
-                        <>
-                            <StatsBar jobs={jobs} />
-                            <FilterBar filter={filter} setFilter={setFilter} sortBy={sortBy} setSortBy={setSortBy} />
-                            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px 48px", display: "flex", flexDirection: "column", gap: 16 }}>
-                                {filteredJobs.map((job, i) => (
-                                    <JobCard key={job.id} job={job} index={i} />
-                                ))}
-                                {filteredJobs.length === 0 && filter && (
-                                    <p style={{ textAlign: "center", color: "#94a3b8", padding: 40 }}>
-                                        No jobs match your filter "{filter}"
-                                    </p>
-                                )}
+                        {/* Empty State */}
+                        {!isSearching && jobs.length === 0 && (
+                            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                                <div style={{ fontSize: 56, marginBottom: 20 }}>🎯</div>
+                                <h2 style={{ fontSize: 22, fontWeight: 600, marginBottom: 10 }}>Ready to Find Your Next Role</h2>
+                                <p style={{ color: "#94a3b8", fontSize: 15, marginBottom: 24 }}>Load your search results or run a live search.</p>
+                                <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+                                    <label style={{ background: "#10b981", color: "#fff", padding: "12px 28px", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+                                        📂 Load job_results.json
+                                        <input type="file" accept=".json" style={{ display: "none" }} onChange={loadFromFile} />
+                                    </label>
+                                    <button onClick={searchJobs} style={{ background: "#3b82f6", color: "#fff", border: "none", padding: "12px 28px", borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>🚀 Live Search</button>
+                                </div>
+                                <p style={{ color: "#64748b", fontSize: 12, marginTop: 20 }}>
+                                    Recommended: Run <code>.\job_search_agent.ps1</code> first, then load the generated <code>job_results.json</code> file.
+                                </p>
                             </div>
-                        </>
-                    )}
+                        )}
+
+                        {/* Results */}
+                        {jobs.length > 0 && (
+                            <>
+                                {/* Stats */}
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
+                                    {[
+                                        { label: "Total", value: jobs.length, icon: "📋", color: "#3b82f6" },
+                                        { label: "Strong", value: strong, icon: "🟢", color: "#10b981" },
+                                        { label: "Avg Salary", value: avgSalary ? `$${avgSalary.toLocaleString()}` : "N/A", icon: "💰", color: "#8b5cf6" },
+                                    ].map((s, i) => (
+                                        <div key={i} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 10, padding: 16 }}>
+                                            <div style={{ fontSize: 20 }}>{s.icon}</div>
+                                            <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                                            <div style={{ fontSize: 12, color: "#94a3b8" }}>{s.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Filter */}
+                                <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+                                    <input type="text" placeholder="Filter by title, company, skill..." value={filter} onChange={e => setFilter(e.target.value)} style={{ flex: 1, minWidth: 200, background: "#1e293b", border: "1px solid #334155", borderRadius: 7, padding: "9px 14px", color: "#e2e8f0", fontSize: 13, outline: "none" }} />
+                                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 7, padding: "9px 14px", color: "#e2e8f0", fontSize: 13 }}>
+                                        <option value="score">Sort: Match Score</option>
+                                        <option value="salary">Sort: Salary</option>
+                                        <option value="company">Sort: Company</option>
+                                    </select>
+                                </div>
+
+                                {/* Job List */}
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    {filtered.map((job, i) => <JobCard key={job.id} job={job} index={i} />)}
+                                    {filtered.length === 0 && <p style={{ textAlign: "center", color: "#94a3b8", padding: 30 }}>No jobs match "{filter}"</p>}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             );
         }
