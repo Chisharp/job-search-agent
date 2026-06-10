@@ -1,0 +1,11 @@
+# Output files
+job_results.json
+job_summary.md
+seen_jobs.json
+
+# Environment/secrets
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
