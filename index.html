@@ -436,7 +436,7 @@
             );
         }
 
-        function EmptyState({ onSearch }) {
+        function EmptyState({ onSearch, onLoadFile }) {
             return (
                 <div style={{ textAlign: "center", padding: "80px 32px" }}>
                     <div style={{ fontSize: 64, marginBottom: 24 }}>🎯</div>
@@ -444,23 +444,43 @@
                         Ready to Find Your Next Role
                     </h2>
                     <p style={{ color: "#94a3b8", fontSize: 16, marginBottom: 32, maxWidth: 500, margin: "0 auto 32px" }}>
-                        Click "Run Search" to scan job boards for CISO, Director, and Staff+ cybersecurity roles matching your profile.
+                        Click "Run Search" to scan job boards for cybersecurity roles matching your profile. Any role with $125k+ salary qualifies.
                     </p>
-                    <button
-                        onClick={onSearch}
-                        style={{
-                            background: "#3b82f6",
-                            color: "#fff",
-                            border: "none",
-                            padding: "14px 32px",
-                            borderRadius: 8,
-                            fontSize: 16,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                        }}
-                    >
-                        🚀 Run Search Now
-                    </button>
+                    <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+                        <button
+                            onClick={onSearch}
+                            style={{
+                                background: "#3b82f6",
+                                color: "#fff",
+                                border: "none",
+                                padding: "14px 32px",
+                                borderRadius: 8,
+                                fontSize: 16,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                            }}
+                        >
+                            🚀 Run Live Search
+                        </button>
+                        <label
+                            style={{
+                                background: "#1e293b",
+                                color: "#e2e8f0",
+                                border: "1px solid #334155",
+                                padding: "14px 32px",
+                                borderRadius: 8,
+                                fontSize: 16,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                            }}
+                        >
+                            📂 Load from job_results.json
+                            <input type="file" accept=".json" style={{ display: "none" }} onChange={onLoadFile} />
+                        </label>
+                    </div>
+                    <p style={{ color: "#64748b", fontSize: 13, marginTop: 20, maxWidth: 500, margin: "20px auto 0" }}>
+                        Tip: Run <code style={{ background: "#334155", padding: "2px 6px", borderRadius: 4 }}>.\job_search_agent.ps1</code> first to generate job_results.json, then load it here.
+                    </p>
                 </div>
             );
         }
@@ -476,6 +496,34 @@
             const [sortBy, setSortBy] = useState("score");
             const [error, setError] = useState("");
 
+            const loadFromFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        const processed = data.map(job => ({
+                            id: job.job_id || `${job.title}|${job.company_name}`,
+                            title: job.title,
+                            company_name: job.company_name,
+                            location: job.location,
+                            description: job.description,
+                            score: job.match_score || 0,
+                            matchedKeywords: job.matched_keywords || [],
+                            salary: job.salary_estimate,
+                            posted: job.detected_extensions?.posted_at || "Recently",
+                            applyLinks: job.apply_options || [],
+                            via: job.via,
+                        })).filter(j => j.score > 0).sort((a, b) => b.score - a.score);
+                        setJobs(processed);
+                    } catch (err) {
+                        setError("Failed to parse JSON file. Make sure it's a valid job_results.json.");
+                    }
+                };
+                reader.readAsText(file);
+            };
+
             const searchJobs = useCallback(async () => {
                 setIsSearching(true);
                 setError("");
@@ -489,37 +537,19 @@
                     setProgress({ current: i + 1, total: queries.length, query });
 
                     try {
-                        // Use script injection (JSONP-like) to bypass CORS on file:// and browsers
-                        const data = await new Promise((resolve, reject) => {
-                            const callbackName = `serpapi_cb_${Date.now()}_${i}`;
-                            const script = document.createElement("script");
-                            
-                            window[callbackName] = (result) => {
-                                delete window[callbackName];
-                                document.head.removeChild(script);
-                                resolve(result);
-                            };
-                            
-                            script.onerror = () => {
-                                delete window[callbackName];
-                                document.head.removeChild(script);
-                                reject(new Error("Script load failed"));
-                            };
+                        // Use corsproxy.io to bypass CORS restrictions
+                        const targetUrl = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&api_key=${CONFIG.serpApiKey}&hl=en&chips=date_posted:week`;
+                        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
 
-                            // SerpAPI supports callback parameter for JSONP
-                            script.src = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(query)}&api_key=${CONFIG.serpApiKey}&hl=en&chips=date_posted:week&no_cache=false&output=json&callback=${callbackName}`;
-                            document.head.appendChild(script);
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                setError("API key invalid. Please update your SerpAPI key in the HTML file.");
+                                break;
+                            }
+                            continue;
+                        }
 
-                            // Timeout after 15s
-                            setTimeout(() => {
-                                if (window[callbackName]) {
-                                    delete window[callbackName];
-                                    try { document.head.removeChild(script); } catch(e) {}
-                                    reject(new Error("Timeout"));
-                                }
-                            }, 15000);
-                        });
-
+                        const data = await response.json();
                         const results = data.jobs_results || [];
 
                         for (const job of results) {
@@ -591,7 +621,7 @@
 
                     {isSearching && <SearchProgress {...progress} />}
 
-                    {!isSearching && jobs.length === 0 && <EmptyState onSearch={searchJobs} />}
+                    {!isSearching && jobs.length === 0 && <EmptyState onSearch={searchJobs} onLoadFile={loadFromFile} />}
 
                     {jobs.length > 0 && (
                         <>
