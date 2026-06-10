@@ -26,90 +26,83 @@ except ImportError:
 SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180")
 
 # Target roles to search for
+# Target roles to search for - format: "query|gl|location"
+# gl = geo-location code, location = specific city/region for Google Jobs
 SEARCH_QUERIES = [
-    # ===== IRELAND (Primary) =====
-    "cybersecurity Ireland",
-    "security engineer Ireland",
-    "cloud security Ireland",
-    "CISO Ireland",
-    "Head of Security Ireland",
-    "Director security Ireland",
-    "cyber detection engineer Ireland",
-    "incident response Ireland",
-    "security architect Ireland",
-    "DevSecOps Ireland",
-    "SOC analyst Ireland",
-    "threat intelligence Ireland",
-    "security operations Ireland",
-    "information security Ireland",
-    "penetration tester Ireland",
-    # Ireland - site-specific
-    "cybersecurity site:irishjobs.ie",
-    "security engineer site:irishjobs.ie",
-    "cybersecurity site:jobs.ie",
-    "security site:linkedin.com/jobs Ireland",
-    "cybersecurity site:glassdoor.com Ireland",
-    "security engineer site:indeed.com Ireland",
+    # ===== IRELAND (location param is required for Irish results) =====
+    "cybersecurity|us|Dublin, County Dublin, Ireland",
+    "security engineer|us|Dublin, County Dublin, Ireland",
+    "cloud security|us|Dublin, County Dublin, Ireland",
+    "CISO|us|Dublin, County Dublin, Ireland",
+    "Head of Security|us|Dublin, County Dublin, Ireland",
+    "Director security|us|Dublin, County Dublin, Ireland",
+    "incident response|us|Dublin, County Dublin, Ireland",
+    "security architect|us|Dublin, County Dublin, Ireland",
+    "DevSecOps|us|Dublin, County Dublin, Ireland",
+    "SOC analyst|us|Dublin, County Dublin, Ireland",
+    "threat intelligence|us|Dublin, County Dublin, Ireland",
+    "information security|us|Dublin, County Dublin, Ireland",
+    "security operations|us|Dublin, County Dublin, Ireland",
+    "penetration tester|us|Dublin, County Dublin, Ireland",
+    "detection engineer|us|Dublin, County Dublin, Ireland",
 
-    # ===== UK =====
-    "cybersecurity remote UK",
-    "security engineer remote UK",
-    "CISO UK remote",
-    "cloud security UK",
-    "Head of Security UK",
-    "Director cybersecurity UK",
-    "DevSecOps UK remote",
-    "threat intelligence UK",
+    # ===== UK (gl=uk) =====
+    "cybersecurity remote|uk|",
+    "security engineer remote|uk|",
+    "CISO|uk|",
+    "cloud security|uk|",
+    "Head of Security|uk|",
+    "Director cybersecurity|uk|",
+    "DevSecOps|uk|",
+    "threat intelligence|uk|",
+    "security architect remote|uk|",
+    "SIEM engineer|uk|",
+    "SOC manager|uk|",
 
-    # ===== Germany =====
-    "cybersecurity remote Germany",
-    "security engineer Germany English",
-    "CISO Germany remote",
-    "cloud security Germany",
-    "Head of Security Germany",
+    # ===== Germany (gl=de) =====
+    "cybersecurity remote English|de|",
+    "security engineer remote|de|",
+    "CISO|de|",
+    "cloud security|de|",
+    "Head of Security|de|",
 
-    # ===== Netherlands =====
-    "cybersecurity Netherlands remote",
-    "security engineer Netherlands",
-    "CISO Netherlands",
-    "cloud security Netherlands",
+    # ===== Netherlands (gl=nl) =====
+    "cybersecurity remote|nl|",
+    "security engineer|nl|",
+    "CISO|nl|",
+    "cloud security|nl|",
 
-    # ===== France =====
-    "cybersecurity France remote English",
-    "CISO France",
-    "security engineer France",
+    # ===== France (gl=fr) =====
+    "cybersecurity remote English|fr|",
+    "CISO|fr|",
+    "security engineer|fr|",
 
-    # ===== Other EU =====
-    "cybersecurity remote Europe",
-    "CISO Europe remote",
-    "security engineer remote Europe",
-    "cloud security remote Europe",
-    "Head of Security Europe remote",
-    "Director cybersecurity Europe remote",
-    "DevSecOps Europe remote",
-    "security architect Europe remote",
+    # ===== Europe general =====
+    "cybersecurity remote Europe|us|",
+    "CISO Europe remote|us|",
+    "security engineer remote Europe|us|",
+    "cloud security remote Europe|us|",
+    "Head of Security Europe remote|us|",
+    "Director cybersecurity Europe remote|us|",
+    "DevSecOps Europe remote|us|",
+    "security architect Europe remote|us|",
 
     # ===== Remote Global =====
-    "cybersecurity engineer remote",
-    "security engineer remote",
-    "cloud security engineer remote",
-    "detection engineer remote",
-    "incident response remote",
-    "security architect remote",
-    "CISO remote",
-    "Head of Security remote",
-    "Director cybersecurity remote",
-    "SIEM engineer remote",
-    "SOAR engineer remote",
-    "DevSecOps remote",
-    "vulnerability management remote",
-    "Staff security engineer remote",
-    "Principal security engineer remote",
-
-    # ===== Job Board focused =====
-    "cybersecurity site:linkedin.com/jobs remote",
-    "cybersecurity site:glassdoor.com remote",
-    "cybersecurity site:indeed.com remote Europe",
+    "cybersecurity engineer remote|us|",
+    "security engineer remote|us|",
+    "cloud security engineer remote|us|",
+    "detection engineer remote|us|",
+    "incident response remote|us|",
+    "security architect remote|us|",
+    "CISO remote|us|",
+    "Head of Security remote|us|",
+    "Director cybersecurity remote|us|",
+    "SIEM engineer remote|us|",
+    "SOAR engineer remote|us|",
+    "DevSecOps remote|us|",
+    "vulnerability management remote|us|",
+    "Staff security engineer remote|us|",
+    "Principal security engineer remote|us|",
 ]
 
 # Minimum salary threshold (USD/EUR equivalent)
@@ -161,16 +154,19 @@ def generate_job_id(job):
     return hashlib.md5(unique_str.encode()).hexdigest()
 
 
-def search_jobs(query):
+def search_jobs(query, gl="us", location=""):
     """Search for jobs using SerpAPI Google Jobs API."""
-    url = "https://serpapi.com/search"
+    url = "https://serpapi.com/search.json"
     params = {
         "engine": "google_jobs",
         "q": query,
         "api_key": SERPAPI_KEY,
         "hl": "en",
-        "chips": "date_posted:week",  # Only jobs posted in the last week
+        "gl": gl,
+        "chips": "date_posted:week",
     }
+    if location:
+        params["location"] = location
 
     try:
         response = requests.get(url, params=params, timeout=30)
@@ -178,7 +174,7 @@ def search_jobs(query):
         data = response.json()
         return data.get("jobs_results", [])
     except requests.exceptions.RequestException as e:
-        print(f"  [ERROR] Search failed for '{query}': {e}")
+        print(f"  [ERROR] Search failed for '{query}' (gl={gl}): {e}")
         return []
 
 
@@ -330,9 +326,14 @@ def run_search():
     all_matched_jobs = []
     new_jobs = []
 
-    for i, query in enumerate(SEARCH_QUERIES, 1):
-        print(f"[{i}/{len(SEARCH_QUERIES)}] Searching: {query}")
-        jobs = search_jobs(query)
+    for i, entry in enumerate(SEARCH_QUERIES, 1):
+        parts = entry.split("|")
+        query = parts[0]
+        gl = parts[1] if len(parts) > 1 and parts[1] else "us"
+        location = parts[2] if len(parts) > 2 and parts[2] else ""
+        region = location.split(",")[0] if location else {"ie": "Ireland", "uk": "UK", "de": "Germany", "nl": "Netherlands", "fr": "France", "us": "Global"}.get(gl, gl)
+        print(f"[{i}/{len(SEARCH_QUERIES)}] Searching: {query} [{region}]")
+        jobs = search_jobs(query, gl, location)
         print(f"  Found {len(jobs)} results")
 
         for job in jobs:
