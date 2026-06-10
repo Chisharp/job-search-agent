@@ -103,6 +103,18 @@ SEARCH_QUERIES = [
     "vulnerability management remote|us|",
     "Staff security engineer remote|us|",
     "Principal security engineer remote|us|",
+
+    # ===== Global onsite/hybrid with relocation =====
+    "cybersecurity relocation assistance|us|",
+    "security engineer relocation|us|",
+    "CISO relocation|us|",
+    "cloud security relocation assistance|us|",
+    "cybersecurity visa sponsorship|us|",
+    "security engineer visa sponsorship|us|",
+    "cybersecurity relocation hybrid|us|",
+    "Head of Security relocation|us|",
+    "DevSecOps relocation assistance|us|",
+    "security architect relocation|us|",
 ]
 
 # Minimum salary threshold (USD/EUR equivalent)
@@ -119,6 +131,7 @@ MATCH_KEYWORDS = [
     "team lead", "staff engineer", "principal engineer",
     "director", "vp security", "cloud native", "kubernetes",
     "container security", "zero trust", "xdr",
+    "relocation", "visa sponsorship", "relocation assistance",
 ]
 
 # Seniority keywords to prioritize
@@ -213,6 +226,10 @@ def calculate_match_score(job):
     # Remote or hybrid preference (up to 10 points)
     if "remote" in combined or "hybrid" in combined:
         score += 10
+
+    # Relocation assistance bonus (5 points)
+    if "relocation" in combined or "visa sponsorship" in combined:
+        score += 5
 
     # Ireland location bonus (10 points) or other EU (5 points)
     if "ireland" in combined or "dublin" in combined:
