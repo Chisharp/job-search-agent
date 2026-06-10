@@ -23,7 +23,7 @@ except ImportError:
 # CONFIGURATION
 # ============================================================
 
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "YOUR_SERPAPI_KEY_HERE")
+SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180")
 
 # Target roles to search for
 SEARCH_QUERIES = [

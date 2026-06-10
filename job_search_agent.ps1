@@ -17,7 +17,7 @@
 # CONFIGURATION
 # ============================================================
 
-$SERPAPI_KEY = if ($env:SERPAPI_KEY) { $env:SERPAPI_KEY } else { "YOUR_SERPAPI_KEY_HERE" }
+$SERPAPI_KEY = if ($env:SERPAPI_KEY) { $env:SERPAPI_KEY } else { "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180" }
 
 $SEARCH_QUERIES = @(
     # Broad cybersecurity roles - remote & global
@@ -101,20 +101,9 @@ function Get-JobId($job) {
 }
 
 function Search-Jobs($query) {
-    $uri = "https://serpapi.com/search"
-    $params = @{
-        engine  = "google_jobs"
-        q       = $query
-        api_key = $SERPAPI_KEY
-        hl      = "en"
-        chips   = "date_posted:week"
-    }
-
-    $queryString = ($params.GetEnumerator() | ForEach-Object { 
-        "$($_.Key)=$([System.Uri]::EscapeDataString($_.Value))" 
-    }) -join "&"
-
-    $fullUri = "$uri`?$queryString"
+    $uri = "https://serpapi.com/search.json"
+    $params = "engine=google_jobs&q=$([System.Uri]::EscapeDataString($query))&api_key=$SERPAPI_KEY&hl=en&chips=date_posted:week"
+    $fullUri = "$uri`?$params"
 
     try {
         $response = Invoke-RestMethod -Uri $fullUri -Method Get -TimeoutSec 30
