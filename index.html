@@ -29,13 +29,22 @@
         const CONFIG = {
             serpApiKey: "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180",
             searchQueries: [
-                "cybersecurity engineer remote", "cyber security remote", "security engineer remote",
-                "cloud security engineer remote", "detection engineer remote", "incident response remote",
-                "security architect remote", "security operations remote", "threat intelligence remote",
+                // Ireland
+                "cybersecurity Ireland", "security engineer Ireland", "cloud security Ireland",
+                "CISO Ireland", "Head of Security Ireland", "Director security Ireland",
+                "DevSecOps Ireland", "incident response Ireland", "security architect Ireland",
+                "SOC analyst Ireland", "threat intelligence Ireland",
+                // UK & Europe
+                "cybersecurity remote UK", "CISO UK remote", "cloud security UK",
+                "cybersecurity remote Germany", "CISO Germany remote",
+                "cybersecurity Netherlands remote", "cybersecurity remote Europe",
+                "CISO Europe remote", "security engineer remote Europe",
+                // Remote Global
+                "cybersecurity engineer remote", "security engineer remote",
+                "cloud security engineer remote", "CISO remote",
+                "Head of Security remote", "Director cybersecurity remote",
                 "SIEM engineer remote", "SOAR engineer remote", "DevSecOps remote",
-                "application security remote", "CISO remote", "Head of Security remote",
-                "Director cybersecurity remote", "cybersecurity Ireland", "cloud security Ireland",
-                "CISO Ireland", "security architect Ireland hybrid",
+                "Staff security engineer remote", "Principal security engineer remote",
             ],
             matchKeywords: [
                 "cloud security", "aws", "azure", "ciso", "head of security",
@@ -86,6 +95,7 @@
 
             if (combined.includes("remote") || combined.includes("hybrid")) score += 10;
             if (combined.includes("ireland") || combined.includes("dublin")) score += 10;
+            else if (["uk", "united kingdom", "london", "germany", "berlin", "netherlands", "amsterdam", "france", "paris", "europe", "spain", "sweden", "switzerland", "denmark", "belgium"].some(loc => combined.includes(loc))) score += 5;
 
             return { score: Math.min(100, score), matchedKeywords, salary };
         }

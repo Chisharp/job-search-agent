@@ -20,37 +20,89 @@
 $SERPAPI_KEY = if ($env:SERPAPI_KEY) { $env:SERPAPI_KEY } else { "50404186c68a7afca77a7f3430e2038a53063237a4b48589159fabf4ef264180" }
 
 $SEARCH_QUERIES = @(
-    # Broad cybersecurity roles - remote & global
-    "cybersecurity engineer remote"
-    "cyber security remote"
-    "security engineer remote"
-    "cloud security engineer remote"
-    "detection engineer remote"
-    "incident response remote"
-    "security architect remote"
-    "security operations remote"
-    "threat intelligence remote"
-    "SIEM engineer remote"
-    "SOAR engineer remote"
-    "DevSecOps remote"
-    "application security remote"
-    "penetration tester remote"
-    "vulnerability management remote"
-    "CISO remote"
-    "Head of Security remote"
-    "Director cybersecurity remote"
-    "VP security remote"
-    # Ireland & hybrid specific
+    # ===== IRELAND (Primary) =====
     "cybersecurity Ireland"
-    "security engineer Ireland hybrid"
+    "security engineer Ireland"
     "cloud security Ireland"
     "CISO Ireland"
     "Head of Security Ireland"
     "Director security Ireland"
     "cyber detection engineer Ireland"
     "incident response Ireland"
-    "security architect Ireland hybrid"
+    "security architect Ireland"
     "DevSecOps Ireland"
+    "SOC analyst Ireland"
+    "threat intelligence Ireland"
+    "security operations Ireland"
+    "information security Ireland"
+    "penetration tester Ireland"
+    # Ireland - site-specific (Google Jobs indexes these)
+    "cybersecurity site:irishjobs.ie"
+    "security engineer site:irishjobs.ie"
+    "cybersecurity site:jobs.ie"
+    "security site:linkedin.com/jobs Ireland"
+    "cybersecurity site:glassdoor.com Ireland"
+    "security engineer site:indeed.com Ireland"
+
+    # ===== UK =====
+    "cybersecurity remote UK"
+    "security engineer remote UK"
+    "CISO UK remote"
+    "cloud security UK"
+    "Head of Security UK"
+    "Director cybersecurity UK"
+    "DevSecOps UK remote"
+    "threat intelligence UK"
+
+    # ===== Germany =====
+    "cybersecurity remote Germany"
+    "security engineer Germany English"
+    "CISO Germany remote"
+    "cloud security Germany"
+    "Head of Security Germany"
+
+    # ===== Netherlands =====
+    "cybersecurity Netherlands remote"
+    "security engineer Netherlands"
+    "CISO Netherlands"
+    "cloud security Netherlands"
+
+    # ===== France =====
+    "cybersecurity France remote English"
+    "CISO France"
+    "security engineer France"
+
+    # ===== Other EU =====
+    "cybersecurity remote Europe"
+    "CISO Europe remote"
+    "security engineer remote Europe"
+    "cloud security remote Europe"
+    "Head of Security Europe remote"
+    "Director cybersecurity Europe remote"
+    "DevSecOps Europe remote"
+    "security architect Europe remote"
+
+    # ===== Remote Global (still include) =====
+    "cybersecurity engineer remote"
+    "security engineer remote"
+    "cloud security engineer remote"
+    "detection engineer remote"
+    "incident response remote"
+    "security architect remote"
+    "CISO remote"
+    "Head of Security remote"
+    "Director cybersecurity remote"
+    "SIEM engineer remote"
+    "SOAR engineer remote"
+    "DevSecOps remote"
+    "vulnerability management remote"
+    "Staff security engineer remote"
+    "Principal security engineer remote"
+
+    # ===== Job Board focused =====
+    "cybersecurity site:linkedin.com/jobs remote"
+    "cybersecurity site:glassdoor.com remote"
+    "cybersecurity site:indeed.com remote Europe"
 )
 
 $MIN_SALARY = 125000
@@ -154,9 +206,11 @@ function Get-MatchScore($job) {
         $score += 10
     }
 
-    # Ireland bonus (10 points)
+    # Ireland bonus (10 points) or other EU (5 points)
     if ($combined -match "ireland" -or $combined -match "dublin") {
         $score += 10
+    } elseif ($combined -match "uk|united kingdom|london|germany|berlin|netherlands|amsterdam|france|paris|europe|spain|sweden|switzerland|denmark|belgium") {
+        $score += 5
     }
 
     return @{

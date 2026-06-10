@@ -27,37 +27,89 @@ SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "50404186c68a7afca77a7f3430e2038a530
 
 # Target roles to search for
 SEARCH_QUERIES = [
-    # Broad cybersecurity roles - remote & global
-    "cybersecurity engineer remote",
-    "cyber security remote",
-    "security engineer remote",
-    "cloud security engineer remote",
-    "detection engineer remote",
-    "incident response remote",
-    "security architect remote",
-    "security operations remote",
-    "threat intelligence remote",
-    "SIEM engineer remote",
-    "SOAR engineer remote",
-    "DevSecOps remote",
-    "application security remote",
-    "penetration tester remote",
-    "vulnerability management remote",
-    "CISO remote",
-    "Head of Security remote",
-    "Director cybersecurity remote",
-    "VP security remote",
-    # Ireland & hybrid specific
+    # ===== IRELAND (Primary) =====
     "cybersecurity Ireland",
-    "security engineer Ireland hybrid",
+    "security engineer Ireland",
     "cloud security Ireland",
     "CISO Ireland",
     "Head of Security Ireland",
     "Director security Ireland",
     "cyber detection engineer Ireland",
     "incident response Ireland",
-    "security architect Ireland hybrid",
+    "security architect Ireland",
     "DevSecOps Ireland",
+    "SOC analyst Ireland",
+    "threat intelligence Ireland",
+    "security operations Ireland",
+    "information security Ireland",
+    "penetration tester Ireland",
+    # Ireland - site-specific
+    "cybersecurity site:irishjobs.ie",
+    "security engineer site:irishjobs.ie",
+    "cybersecurity site:jobs.ie",
+    "security site:linkedin.com/jobs Ireland",
+    "cybersecurity site:glassdoor.com Ireland",
+    "security engineer site:indeed.com Ireland",
+
+    # ===== UK =====
+    "cybersecurity remote UK",
+    "security engineer remote UK",
+    "CISO UK remote",
+    "cloud security UK",
+    "Head of Security UK",
+    "Director cybersecurity UK",
+    "DevSecOps UK remote",
+    "threat intelligence UK",
+
+    # ===== Germany =====
+    "cybersecurity remote Germany",
+    "security engineer Germany English",
+    "CISO Germany remote",
+    "cloud security Germany",
+    "Head of Security Germany",
+
+    # ===== Netherlands =====
+    "cybersecurity Netherlands remote",
+    "security engineer Netherlands",
+    "CISO Netherlands",
+    "cloud security Netherlands",
+
+    # ===== France =====
+    "cybersecurity France remote English",
+    "CISO France",
+    "security engineer France",
+
+    # ===== Other EU =====
+    "cybersecurity remote Europe",
+    "CISO Europe remote",
+    "security engineer remote Europe",
+    "cloud security remote Europe",
+    "Head of Security Europe remote",
+    "Director cybersecurity Europe remote",
+    "DevSecOps Europe remote",
+    "security architect Europe remote",
+
+    # ===== Remote Global =====
+    "cybersecurity engineer remote",
+    "security engineer remote",
+    "cloud security engineer remote",
+    "detection engineer remote",
+    "incident response remote",
+    "security architect remote",
+    "CISO remote",
+    "Head of Security remote",
+    "Director cybersecurity remote",
+    "SIEM engineer remote",
+    "SOAR engineer remote",
+    "DevSecOps remote",
+    "vulnerability management remote",
+    "Staff security engineer remote",
+    "Principal security engineer remote",
+
+    # ===== Job Board focused =====
+    "cybersecurity site:linkedin.com/jobs remote",
+    "cybersecurity site:glassdoor.com remote",
+    "cybersecurity site:indeed.com remote Europe",
 ]
 
 # Minimum salary threshold (USD/EUR equivalent)
@@ -166,9 +218,13 @@ def calculate_match_score(job):
     if "remote" in combined or "hybrid" in combined:
         score += 10
 
-    # Ireland location bonus (10 points)
+    # Ireland location bonus (10 points) or other EU (5 points)
     if "ireland" in combined or "dublin" in combined:
         score += 10
+    elif any(loc in combined for loc in ["uk", "united kingdom", "london", "germany", "berlin",
+             "netherlands", "amsterdam", "france", "paris", "europe", "spain",
+             "sweden", "switzerland", "denmark", "belgium"]):
+        score += 5
 
     return min(100, score), matched_keywords
 
